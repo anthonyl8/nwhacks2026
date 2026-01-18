@@ -52,26 +52,8 @@ class AgentService:
         """
         Internal method to call OpenAI Chat Completions with streaming.
         """
-        # # Prepare messages list: [System, ...History, Current User Message]
-        # messages = [{"role": "system", "content": system_prompt}]
-        
-        # # Add historical messages (standardizing roles for OpenAI)
-        # for msg in self.chat_history:
-        #     role = "assistant" if msg["role"] in ["model", "assistant"] else "user"
-        #     messages.append({"role": role, "content": msg["content"]})
-            
-        # # Add the new user input
-        # messages.append({"role": "user", "content": user_text})
-
-        # return await self.client.chat.completions.create(
-        #     model=self.model_name,
-        #     messages=messages,
-        #     stream=True,
-        #     max_tokens=max_tokens,
-        #     temperature=0.4
-        # )
-        stream = await run_conversation(user_text, emotion_state)
-        async for chunk in stream:
+        # Call the strands agent conversation runner
+        async for chunk in run_conversation(user_text, emotion_state):
             yield chunk
 
     async def llm_token_stream(
@@ -90,11 +72,9 @@ class AgentService:
             
             full_response = ""
             async for chunk in response_stream:
-                # OpenAI structure: chunk.choices[0].delta.content
-                if chunk.choices and chunk.choices[0].delta.content:
-                    text_chunk = chunk.choices[0].delta.content
-                    full_response += text_chunk
-                    yield text_chunk
+                # Chunk is already a string from run_conversation
+                full_response += chunk
+                yield chunk
             
             # Update history for this instance
             self.chat_history.append({"role": "user", "content": user_text})
@@ -335,7 +315,7 @@ Conversation:
     return response.output_text
 
 
-async def run_conversation(user_input: str, emotion_state: str):
+async def run_conversation(user_input: str, emotion_state: str) -> AsyncIterator[str]:
     """
     Run the wellness agent in conversational mode.
     Reads from stdin if user_input is None.
@@ -520,25 +500,30 @@ async def run_conversation(user_input: str, emotion_state: str):
                     "timestamp": time.strftime('%l:%M%p %z on %b %d, %Y')
                 })
 
+                full_response = ""
                 # Agent response
-                response = await agent(
+                async for event in agent.stream_async(
                     f"\n----START OF USER INPUT----\n{user_input}\n----END OF USER INPUT----\n"
                     f"\n----USER EMOTIONAL STATE BASED ON PHYSICAL APPEARANCE: {emotion_state}----\n"
-                    )
+                ):
+                    if "data" in event and isinstance(event["data"], str):
+                        chunk = event["data"]
+                        full_response += chunk
+                        yield chunk
 
                 conversation_log.append({
                     "role": "assistant",
-                    "content": response,
+                    "content": full_response,
                     "timestamp": time.strftime('%l:%M%p %z on %b %d, %Y')
                 })
                     
             except KeyboardInterrupt:
                 logger.info("Conversation interrupted by user")
-                return response
             except Exception as e:
                 logger.error(f"Error in conversation: {e}", exc_info=True)
                 print("I'm sorry, I encountered an error. Let's try again.")
-                user_input = input("\nYou: ").strip()
+                # We can't use input() in a service
+                # user_input = input("\nYou: ").strip()
             
             logger.info("Conversation ended")
             
@@ -546,17 +531,18 @@ async def run_conversation(user_input: str, emotion_state: str):
             summary = await generate_session_summary(conversation_log, agent.model)
             print("\n— Session Reflection —\n")
             print(summary)
-            response = (
-                supabase.table("sessions_info")
-                .insert({"note": summary, "user_id": get_current_user()})
-                .execute()
-            )
+            # Use get_current_user() but handle potential auth context issues if running in background
+            try:
+                user_id = get_current_user()
+                supabase.table("sessions_info").insert({"note": summary, "user_id": user_id}).execute()
+            except Exception as e:
+                logger.warning(f"Could not save session summary to DB: {e}")
+
         except Exception as e:
             logger.warning(f"Could not generate summary: {e}")
             
     except Exception as e:
         logger.error(f"Failed to initialize agent: {e}", exc_info=True)
         print("I'm sorry, I couldn't start properly. Please check the logs.")
-        sys.exit(1)
-        
-    return response
+        # Do not exit the process in a service
+        # sys.exit(1)

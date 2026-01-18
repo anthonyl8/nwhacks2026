@@ -7,14 +7,14 @@ class ElevenLabsService:
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{settings.ELEVENLABS_VOICE_ID}/stream"
 
         headers = {
-            "Authorization": f"Bearer {settings.ELEVENLABS_API_KEY}",
+            "xi-api-key": settings.ELEVENLABS_API_KEY,
             "Content-Type": "application/json",
             "Accept": "audio/mpeg"
         }
 
         payload = {
             "text": text,
-            "model_id": "eleven_monolingual_v1",
+            "model_id": "eleven_multilingual_v2",
             "voice_settings": {
                 "stability": 0.35,
                 "similarity_boost": 0.75
