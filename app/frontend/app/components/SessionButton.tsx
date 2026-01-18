@@ -1,4 +1,5 @@
 import { CommitStrategy, useScribe } from "@elevenlabs/react";
+import { useRef } from "react";
 import { supabase } from "~/lib/supabase";
 import { b64 } from "~/lib/b64";
 
@@ -10,6 +11,12 @@ interface SpeakRequest {
   b64_frame: string;
 }
 export default function MyComponent() {
+  const scribeTokenRef = useRef<string | null>(null);
+  const microphoneConfig = {
+    echoCancellation: true,
+    noiseSuppression: true,
+  };
+
   async function fetchTokenFromServer(): Promise<string> {
     const res = await fetch(ScribeTokenUrl, { method: "GET" });
 
@@ -40,7 +47,7 @@ export default function MyComponent() {
     onPartialTranscript: (data) => {
       console.log("Partial:", data.text);
     },
-    onCommittedTranscript: (data) => {
+    onCommittedTranscript: async (data) => {
       console.log("Committed:", data.text);
       const reqBody: SpeakRequest = {
         user_text: data.text,
@@ -48,13 +55,53 @@ export default function MyComponent() {
         b64_frame: b64,
       };
 
-      fetch("http://localhost:8000/intelligence/speak", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json", // Indicate the data type in the body
-        },
-        body: JSON.stringify(reqBody),
-      });
+      try {
+        if (scribe.isConnected) {
+          await Promise.resolve(scribe.disconnect());
+        }
+
+        const response = await fetch(
+          "http://localhost:8000/intelligence/speak",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json", // Indicate the data type in the body
+            },
+            body: JSON.stringify(reqBody),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Speak request failed: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        const rawBlob = await response.blob();
+        const audioBlob = rawBlob.type
+          ? rawBlob
+          : new Blob([rawBlob], { type: "audio/mpeg" });
+
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+
+        await new Promise<void>((resolve, reject) => {
+          audio.onended = () => resolve();
+          audio.onerror = () => reject(new Error("Audio playback failed"));
+          audio.play().catch(reject);
+        });
+
+        URL.revokeObjectURL(audioUrl);
+
+        if (scribeTokenRef.current) {
+          await scribe.connect({
+            token: scribeTokenRef.current,
+            microphone: microphoneConfig,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch/play speak audio:", error);
+      }
     },
     onCommittedTranscriptWithTimestamps: (data) => {
       console.log("Committed with timestamps:", data.text);
@@ -76,13 +123,11 @@ export default function MyComponent() {
       method: "POST",
     });
     const token = await fetchTokenFromServer();
+    scribeTokenRef.current = token;
 
     await scribe.connect({
       token,
-      microphone: {
-        echoCancellation: true,
-        noiseSuppression: true,
-      },
+      microphone: microphoneConfig,
     });
   };
 
