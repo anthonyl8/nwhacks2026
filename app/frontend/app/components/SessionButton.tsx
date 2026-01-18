@@ -1,7 +1,6 @@
 import { CommitStrategy, useScribe } from "@elevenlabs/react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "~/lib/supabase";
-import { b64 } from "~/lib/b64";
 
 const ScribeTokenUrl = "http://localhost:8000/scribe";
 
@@ -12,9 +11,71 @@ interface SpeakRequest {
 }
 export default function MyComponent() {
   const scribeTokenRef = useRef<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
   const microphoneConfig = {
     echoCancellation: true,
     noiseSuppression: true,
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const startCamera = async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Webcam not supported");
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" },
+          audio: false,
+        });
+
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setIsCameraReady(true);
+      } catch (error) {
+        console.error("Failed to start webcam:", error);
+        setCameraError("Unable to access webcam.");
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      active = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  const captureFrame = () => {
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+      return null;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return null;
+    }
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.8);
   };
 
   async function fetchTokenFromServer(): Promise<string> {
@@ -50,10 +111,12 @@ export default function MyComponent() {
     onCommittedTranscript: async (data) => {
       console.log("Committed:", data.text);
       if (data.text.length > 5) {
+        const capturedFrame = captureFrame();
+        const encodedFrame = capturedFrame ? capturedFrame.split(",")[1] : b64;
         const reqBody: SpeakRequest = {
           user_text: data.text,
           history: null,
-          b64_frame: b64,
+          b64_frame: encodedFrame,
         };
 
         try {
@@ -134,20 +197,61 @@ export default function MyComponent() {
   };
 
   return (
-    <div>
-      <button onClick={handleStart} disabled={scribe.isConnected}>
-        Start Recording
-      </button>
-      <button onClick={scribe.disconnect} disabled={!scribe.isConnected}>
-        Stop
-      </button>
+    <div className="bg-white/95 rounded-lg shadow-lg p-6 space-y-4 border border-teal-900/10">
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.2em] text-teal-700">
+          Live Session
+        </p>
+        <h2 className="text-2xl font-light text-teal-900">HealthSimple</h2>
+      </div>
 
-      {scribe.partialTranscript && <p>Live: {scribe.partialTranscript}</p>}
+      <div className="space-y-2">
+        {cameraError ? (
+          <p className="text-sm text-rose-600">{cameraError}</p>
+        ) : (
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            className="w-full aspect-video rounded-md bg-gray-100 object-cover"
+          />
+        )}
+        {!cameraError && !isCameraReady && (
+          <p className="text-xs text-gray-500">Starting camera...</p>
+        )}
+      </div>
 
-      <div>
-        {scribe.committedTranscripts.map((t) => (
-          <p key={t.id}>{t.text}</p>
-        ))}
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={handleStart}
+          disabled={scribe.isConnected}
+          className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:bg-teal-700/50"
+        >
+          Start Recording
+        </button>
+        <button
+          onClick={scribe.disconnect}
+          disabled={!scribe.isConnected}
+          className="rounded-md border border-teal-700/40 px-4 py-2 text-sm font-medium text-teal-800 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:border-teal-700/20 disabled:text-teal-700/40"
+        >
+          Stop
+        </button>
+      </div>
+
+      <div className="space-y-2 text-sm text-gray-700">
+        {scribe.partialTranscript && (
+          <p className="rounded-md bg-teal-50 px-3 py-2 text-teal-900">
+            Live: {scribe.partialTranscript}
+          </p>
+        )}
+
+        <div className="space-y-2">
+          {scribe.committedTranscripts.map((t) => (
+            <p key={t.id} className="rounded-md bg-gray-100 px-3 py-2">
+              {t.text}
+            </p>
+          ))}
+        </div>
       </div>
     </div>
   );
