@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict
 import base64
 from openai import OpenAI
+from backend.src.core.config import settings
 
 # Import services
 from backend.src.core.security import get_current_user
@@ -27,7 +28,7 @@ def analyze_emotion_from_base64_image(image_base64: str) -> str:
     This is a probabilistic inference based on visible facial cues.
     """
     
-    client = OpenAI()
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
     # Strip data URL header if present
     if image_base64.startswith("data:image"):
@@ -64,6 +65,7 @@ def analyze_emotion_from_base64_image(image_base64: str) -> str:
     )
 
     emotion = response.choices[0].message.content.strip().lower()
+    print(emotion + " wiuorhgturhgtuihwaeriugWERFER")
     return emotion
     
 @router.post("/start")

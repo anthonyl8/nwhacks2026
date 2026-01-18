@@ -326,7 +326,7 @@ Conversation:
         f"{m['role'].capitalize()}: {m['content']}"
         for m in conversation_log
     )
-    client = OpenAI()
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
     response = client.responses.create(
         model=str(model),
         input=summary_prompt+"\n"+formatted_convo
