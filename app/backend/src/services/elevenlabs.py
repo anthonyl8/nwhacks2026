@@ -1,15 +1,13 @@
-import requests
-
-API_KEY = "YOUR_API_KEY"
-VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
+import httpx
+from app.backend.src.core.config import settings
 
 class ElevenLabsService:
     @staticmethod
-    def elevenlabs_stream(text):
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}/stream"
+    async def elevenlabs_stream(text):
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{settings.ELEVENLABS_VOICE_ID}/stream"
 
         headers = {
-            "Authorization": f"Bearer {API_KEY}",
+            "Authorization": f"Bearer {settings.ELEVENLABS_API_KEY}",
             "Content-Type": "application/json",
             "Accept": "audio/mpeg"
         }
@@ -23,13 +21,12 @@ class ElevenLabsService:
             }
         }
 
-        response = requests.post(
-            url,
-            json=payload,
-            headers=headers,
-            stream=True
-        )
-
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                yield chunk
+        async with httpx.AsyncClient() as client:
+            async with client.stream("POST", url, json=payload, headers=headers) as response:
+                if response.status_code != 200:
+                    error_detail = await response.aread()
+                    print(f"ElevenLabs API Error: {response.status_code} - {error_detail}")
+                    raise Exception(f"ElevenLabs API Error: {response.status_code}")
+                    
+                async for chunk in response.aiter_bytes():
+                    yield chunk
