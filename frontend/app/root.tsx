@@ -7,6 +7,8 @@ import {
   ScrollRestoration,
 } from "react-router";
 
+import MainPageContainer from './routes/MainPageContainer'
+
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -42,7 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return <MainPageContainer />;
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
