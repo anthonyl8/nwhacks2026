@@ -1,7 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, status
-from app.backend.src.core.security import get_current_user
-from app.backend.src.services.agent import AgentService
-from app.backend.src.core.config import settings
+from backend.src.core.config import settings
 from jose import jwt, JWTError
 
 router = APIRouter(prefix="/session", tags=["Session"])
@@ -36,7 +34,6 @@ async def wellness_session(
         return
 
     # Use AgentService (which now uses Supabase client)
-    agent = AgentService()
     try:
         while True:
             data = await websocket.receive_text()

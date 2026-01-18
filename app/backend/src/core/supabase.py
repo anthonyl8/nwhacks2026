@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from app.backend.src.core.config import settings
+from backend.src.core.config import settings
 
 # Initialize the Supabase client
 # We use the Service Role Key (if available) for backend operations that bypass RLS,

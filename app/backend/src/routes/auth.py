@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
-from app.backend.src.core.security import get_current_user
-from app.backend.src.core.supabase import supabase
+from backend.src.core.security import get_current_user
+from backend.src.core.supabase import supabase
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
