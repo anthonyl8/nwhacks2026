@@ -38,7 +38,7 @@ async def formulate_agent_response(
          processed_features['timestamp'] = "unknown time"
     
     # Pass token to AgentService
-    agent_service = AgentService(token=user["token"])
+    agent_service = AgentService()
     # Call formulate_response which returns a "vibe" state (string), NOT a StreamingResponse
     state = await agent_service.update_physical_data(processed_features)
     return {"response": state}

@@ -17,11 +17,8 @@ class LLMStreamError(Exception):
     pass
 
 class AgentService:
-    def __init__(self, token: Optional[str] = None, history: Optional[List[Dict[str, str]]] = None):
-        if token:
-            self.supabase = get_authenticated_client(token)
-        else:
-            self.supabase = supabase
+    def __init__(self, history: Optional[List[Dict[str, str]]] = None):
+        self.supabase = supabase
             
         # Initialize the model
         self.model = genai.GenerativeModel("gemini-1.5-flash")
