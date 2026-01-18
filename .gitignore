@@ -11,3 +11,5 @@ frontend/package.json
 # React Router
 app/frontend/.react-router/
 app/frontend/build/
+
+__pycache__/
