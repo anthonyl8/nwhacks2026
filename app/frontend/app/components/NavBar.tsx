@@ -1,6 +1,6 @@
 import React from 'react';
 import Button from './Button';
-import { useNavigate } from '@react-router/dev';
+import { useNavigate } from "react-router-dom";
 
 interface NavBarProps {
   activeTab?: string;
@@ -8,16 +8,20 @@ interface NavBarProps {
 }
 
 const NavBar: React.FC<NavBarProps> = ({ activeTab = 'Home', onTabChange }) => {
-  const tabs = ['Home', 'New Session', 'Past Sessions', 'Agent'];
+  const navigate = useNavigate();
+  const navLinks = [
+    { label: "Home", path: "/"},
+    { label: "New Session", path: "/new-session"},
+    { label: "Past Sessions", path: "/past-sessions"}
+  ];
 
   return (
     <nav className="bg-white rounded-lg shadow-sm p-2 flex gap-2">
-      {tabs.map((tab) => (
+      {navLinks.map((link) => (
         <Button
-          key={tab}
-          label={tab}
-          isActive={activeTab === tab}
-          onClick={() => onTabChange?.(tab)}
+          key={link.path}
+          label={link.label}
+          onClick={() => navigate(link.path)}
         />
       ))}
     </nav>
