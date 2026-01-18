@@ -1,5 +1,5 @@
 import { CommitStrategy, useScribe } from "@elevenlabs/react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "~/lib/supabase";
 import { b64 } from "~/lib/b64";
 
@@ -12,9 +12,71 @@ interface SpeakRequest {
 }
 export default function MyComponent() {
   const scribeTokenRef = useRef<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
   const microphoneConfig = {
     echoCancellation: true,
     noiseSuppression: true,
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const startCamera = async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Webcam not supported");
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" },
+          audio: false,
+        });
+
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setIsCameraReady(true);
+      } catch (error) {
+        console.error("Failed to start webcam:", error);
+        setCameraError("Unable to access webcam.");
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      active = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  const captureFrame = () => {
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+      return null;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return null;
+    }
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.8);
   };
 
   async function fetchTokenFromServer(): Promise<string> {
@@ -50,10 +112,12 @@ export default function MyComponent() {
     onCommittedTranscript: async (data) => {
       console.log("Committed:", data.text);
       if (data.text.length > 5) {
+        const capturedFrame = captureFrame();
+        const encodedFrame = capturedFrame ? capturedFrame.split(",")[1] : b64;
         const reqBody: SpeakRequest = {
           user_text: data.text,
           history: null,
-          b64_frame: b64,
+          b64_frame: encodedFrame,
         };
 
         try {
@@ -135,6 +199,19 @@ export default function MyComponent() {
 
   return (
     <div>
+      <div>
+        {cameraError ? (
+          <p>{cameraError}</p>
+        ) : (
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            style={{ width: "240px", borderRadius: "8px" }}
+          />
+        )}
+        {!cameraError && !isCameraReady && <p>Starting camera...</p>}
+      </div>
       <button onClick={handleStart} disabled={scribe.isConnected}>
         Start Recording
       </button>
