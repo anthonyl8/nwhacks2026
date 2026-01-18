@@ -1,62 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "~/lib/supabase";
-import type { Session } from "@supabase/supabase-js";
+import { useRequireGuest } from "~/hooks/useRequireGuest";
+import { useMagicLink } from "~/hooks/useMagicLink";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { loading: authLoading } = useRequireGuest();
+  const { verifying, authError, authSuccess, setAuthError } = useMagicLink();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
-  const [session, setSession] = useState<Session | null>(null);
-  const [verifying, setVerifying] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authSuccess, setAuthSuccess] = useState(false);
-
-  useEffect(() => {
-    // Check if we have token_hash in URL (magic link callback)
-    const params = new URLSearchParams(window.location.search);
-    const token_hash = params.get("token_hash");
-    const hasTokenHash = !!token_hash;
-
-    if (hasTokenHash) {
-      setVerifying(true);
-      // Verify the OTP token
-      supabase.auth.verifyOtp({
-        token_hash,
-        type: "email" as const,
-      }).then(({ error }) => {
-        if (error) {
-          setAuthError(error.message);
-        } else {
-          setAuthSuccess(true);
-          // Clear URL params
-          window.history.replaceState({}, document.title, "/login");
-        }
-        setVerifying(false);
-      });
-    }
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        // Redirect to app if already logged in
-        navigate("/app");
-      }
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        navigate("/app");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -71,11 +24,18 @@ export default function Login() {
     if (error) {
       setAuthError(error.message);
     } else {
-      setAuthSuccess(true);
       alert("Check your email for the login link!");
     }
     setLoading(false);
   };
+
+  if (authLoading) {
+    return (
+      <div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   // Show verification state
   if (verifying) {
@@ -89,7 +49,7 @@ export default function Login() {
   }
 
   // Show auth success
-  if (authSuccess && !session) {
+  if (authSuccess) {
     return (
       <div>
         <h1>Authentication</h1>
