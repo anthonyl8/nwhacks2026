@@ -5,10 +5,10 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict
 
 # Import services
-from app.backend.src.core.security import get_current_user
-from app.backend.src.services.agent import AgentService
+from backend.src.core.security import get_current_user
+from backend.src.services.agent import AgentService
 
-router = APIRouter(prefix="/intelligence", tags=["Intelligence"])
+router = APIRouter(prefix="/intelligence", tags=["Intelligence"])'
 
 class SpeakRequest(BaseModel):
     user_text: str
@@ -16,8 +16,7 @@ class SpeakRequest(BaseModel):
 
 @router.post("/features")
 async def formulate_agent_response(
-    features: dict, 
-    user: dict = Depends(get_current_user)
+    features: dict, auth_id: str = Depends(get_current_user)
 ):
     # Logic for processing biometric features
     # Create a copy to avoid mutating the input dictionary
