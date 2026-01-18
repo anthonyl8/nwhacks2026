@@ -11,7 +11,7 @@ async def get_emotional_history(auth_id: str = Depends(get_current_user)):
     response = (
         supabase.table("emotional_logs")
         .select("*")
-        .eq("user_id", user["id"])
+        .eq("user_id", auth_id)
         .order("timestamp", desc=True)
         .limit(5)
         .execute()
