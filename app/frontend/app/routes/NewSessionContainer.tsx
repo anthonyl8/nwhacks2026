@@ -1,29 +1,38 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import InputField from '../components/InputField';
-import NavBar from '../components/NavBar';
-
+import { useState } from "react";
+import InputField from "../components/InputField";
+import NavBar from "../components/NavBar";
+import { useRequireAuth } from "~/hooks/useRequireAuth";
 
 const NewSessionContainer: React.FC = () => {
-
-  const [activeTab, setActiveTab] = React.useState('Sessions');
-  const [formData, setFormData] = React.useState({
-    feeling: '',
-    talkAbout: '',
-    avoidTopics: '',
-    conversationStyle: '',
-    chatLength:'',
-    sessionName:'',
-    recordOption: '',
+  const { session, loading } = useRequireAuth();
+  const [activeTab, setActiveTab] = useState("Sessions");
+  const [formData, setFormData] = useState({
+    feeling: "",
+    talkAbout: "",
+    avoidTopics: "",
+    conversationStyle: "",
+    chatLength: "",
+    sessionName: "",
+    recordOption: "",
   });
+
+  if (loading) {
+    return (
+      <div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null; // Will redirect
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleStartSession = () => {
-    
-  };
+  const handleStartSession = () => {};
 
   return (
     <div className="min-h-screen bg-teal-700 p-6">
@@ -39,7 +48,7 @@ const NewSessionContainer: React.FC = () => {
             hasOptions={false}
             defaultText="relaxed, stressed, sad, ..."
             value={formData.feeling}
-            onChange={(value) => handleInputChange('feeling', value)}
+            onChange={(value) => handleInputChange("feeling", value)}
           />
 
           <InputField
@@ -48,7 +57,7 @@ const NewSessionContainer: React.FC = () => {
             hasOptions={false}
             defaultText="work, school, relationships, goals, fun facts, ..."
             value={formData.talkAbout}
-            onChange={(value) => handleInputChange('talkAbout', value)}
+            onChange={(value) => handleInputChange("talkAbout", value)}
           />
 
           <InputField
@@ -57,48 +66,52 @@ const NewSessionContainer: React.FC = () => {
             hasOptions={false}
             defaultText="type in any topic you would like to avoid"
             value={formData.avoidTopics}
-            onChange={(value) => handleInputChange('avoidTopics', value)}
+            onChange={(value) => handleInputChange("avoidTopics", value)}
           />
 
           <InputField
             label="How should I talk to you right now?"
             isOptional={true}
             hasOptions={true}
-            options={['friend', 'acquaintance', 'mentor', 'stranger']}
+            options={["friend", "acquaintance", "mentor", "stranger"]}
             defaultText="Select one of the options"
             value={formData.conversationStyle}
-            onChange={(value) => handleInputChange('conversationStyle', value)}
+            onChange={(value) => handleInputChange("conversationStyle", value)}
           />
 
           <InputField
-          label="How long are we chatting for?"
-          isOptional={false}
-          hasOptions={true}
-          options={['I would like to fall asleep eventually', 'I want to stay up for a bit longer and chat!']}
-          defaultText="Select one of the options"
-          value={formData.chatLength}
-          onChange={(value) => handleInputChange('chatLength', value)}
+            label="How long are we chatting for?"
+            isOptional={false}
+            hasOptions={true}
+            options={[
+              "I would like to fall asleep eventually",
+              "I want to stay up for a bit longer and chat!",
+            ]}
+            defaultText="Select one of the options"
+            value={formData.chatLength}
+            onChange={(value) => handleInputChange("chatLength", value)}
           />
 
           <InputField
-          label="What would you like to name this session?"
-          isOptional={true}
-          hasOptions={false}
-          defaultText="Enter a descriptive name that will help you remember our chat!"
-          value={formData.sessionName}
-          onChange={(value) => handleInputChange('sessionName', value)}
+            label="What would you like to name this session?"
+            isOptional={true}
+            hasOptions={false}
+            defaultText="Enter a descriptive name that will help you remember our chat!"
+            value={formData.sessionName}
+            onChange={(value) => handleInputChange("sessionName", value)}
           />
 
           <InputField
-          label="Would you like to record this session? Nothing will be recorded without your permission."
-          isOptional={false}
-          hasOptions={true}
-          options={['Yes, I would like to record this session for analysis purposes',
-                    'No, I would not like to save this session after it is over'
-          ]}
-          defaultText="Enter a descriptive name that will help you remember our chat!"
-          value={formData.recordOption}
-          onChange={(value) => handleInputChange('recordOption', value)}
+            label="Would you like to record this session? Nothing will be recorded without your permission."
+            isOptional={false}
+            hasOptions={true}
+            options={[
+              "Yes, I would like to record this session for analysis purposes",
+              "No, I would not like to save this session after it is over",
+            ]}
+            defaultText="Enter a descriptive name that will help you remember our chat!"
+            value={formData.recordOption}
+            onChange={(value) => handleInputChange("recordOption", value)}
           />
 
           <div className="flex justify-center pt-6">

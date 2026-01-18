@@ -10,23 +10,42 @@ export function useMagicLink() {
     // Check if we have token_hash in URL (magic link callback)
     const params = new URLSearchParams(window.location.search);
     const token_hash = params.get("token_hash");
+    const redirectPath = params.get("redirect");
 
     if (token_hash) {
+      // Store the redirect path from URL if present
+      if (redirectPath) {
+        sessionStorage.setItem("redirectAfterLogin", redirectPath);
+      }
+
       setVerifying(true);
       // Verify the OTP token
-      supabase.auth.verifyOtp({
-        token_hash,
-        type: "email" as const,
-      }).then(({ error }) => {
-        if (error) {
-          setAuthError(error.message);
-        } else {
-          setAuthSuccess(true);
-          // Clear URL params
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-        setVerifying(false);
-      });
+      supabase.auth
+        .verifyOtp({
+          token_hash,
+          type: "email" as const,
+        })
+        .then(async ({ error }) => {
+          if (error) {
+            setAuthError(error.message);
+            setVerifying(false);
+          } else {
+            // Wait for the session to be established
+            const {
+              data: { session },
+            } = await supabase.auth.getSession();
+            if (session) {
+              setAuthSuccess(true);
+              // Clear URL params but preserve redirect if it was in sessionStorage
+              window.history.replaceState(
+                {},
+                document.title,
+                window.location.pathname
+              );
+            }
+            setVerifying(false);
+          }
+        });
     }
   }, []);
 

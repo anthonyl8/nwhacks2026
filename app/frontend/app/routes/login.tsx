@@ -1,25 +1,59 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "~/lib/supabase";
 import { useRequireGuest } from "~/hooks/useRequireGuest";
 import { useMagicLink } from "~/hooks/useMagicLink";
+import { useAuth } from "~/hooks/useAuth";
 
 export default function Login() {
   const navigate = useNavigate();
   const { loading: authLoading } = useRequireGuest();
   const { verifying, authError, authSuccess, setAuthError } = useMagicLink();
+  const { session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
+
+  // Handle redirect after successful authentication
+  useEffect(() => {
+    if (authSuccess && session && !verifying) {
+      // Small delay to ensure everything is ready
+      const timer = setTimeout(() => {
+        // Check if there's a stored redirect path
+        const redirectPath = sessionStorage.getItem("redirectAfterLogin");
+        if (redirectPath) {
+          // Clear the stored redirect path
+          sessionStorage.removeItem("redirectAfterLogin");
+          navigate(redirectPath);
+        } else {
+          // Default redirect to /app if no stored path
+          navigate("/app");
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [authSuccess, session, navigate, verifying]);
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     setAuthError(null);
+
+    // Get the redirect path from sessionStorage or default to /app
+    const redirectPath = sessionStorage.getItem("redirectAfterLogin") || "/app";
+
+    // Include the redirect path in the magic link URL
+    const redirectUrl = new URL(
+      `${window.location.origin}/login`,
+      window.location.origin
+    );
+    redirectUrl.searchParams.set("redirect", redirectPath);
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/login`,
-      }
+        emailRedirectTo: redirectUrl.toString(),
+      },
     });
     if (error) {
       setAuthError(error.message);
