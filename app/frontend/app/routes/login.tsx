@@ -25,8 +25,8 @@ export default function Login() {
           sessionStorage.removeItem("redirectAfterLogin");
           navigate(redirectPath);
         } else {
-          // Default redirect to / if no stored path
-          navigate("/");
+          // Default redirect to /routes/MainPageContainer.tsx if no stored path
+          navigate("/routes/MainPageContainer.tsx");
         }
       }, 100);
 
@@ -39,8 +39,8 @@ export default function Login() {
     setLoading(true);
     setAuthError(null);
 
-    // Get the redirect path from sessionStorage or default to /
-    const redirectPath = sessionStorage.getItem("redirectAfterLogin") || "/";
+    // Get the redirect path from sessionStorage or default to /mainPage
+    const redirectPath = sessionStorage.getItem("redirectAfterLogin") || "/mainPage";
 
     // Include the redirect path in the magic link URL
     const redirectUrl = new URL(

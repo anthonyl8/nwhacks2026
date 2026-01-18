@@ -10,6 +10,9 @@ export default function App() {
     await supabase.auth.signOut();
     navigate("/");
   };
+  const handleMainPage = async () => {
+    navigate("/mainPage");
+  };
 
   if (loading) {
     return (
@@ -28,6 +31,9 @@ export default function App() {
       <h1>App Dashboard</h1>
       <p>Welcome, {session.user.email}!</p>
       <p>This is your main app page. Implement your app features here.</p>
+      <button onClick={handleMainPage}>
+        Click me to the main page
+      </button>
       <button onClick={handleLogout}>
         Sign Out
       </button>
