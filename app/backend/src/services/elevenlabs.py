@@ -4,7 +4,8 @@ from backend.src.core.config import settings
 class ElevenLabsService:
     @staticmethod
     async def elevenlabs_stream(text):
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{settings.ELEVENLABS_VOICE_ID}/stream"
+        # maximize performance with optimize_streaming_latency=4
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{settings.ELEVENLABS_VOICE_ID}/stream?optimize_streaming_latency=4"
 
         headers = {
             "xi-api-key": settings.ELEVENLABS_API_KEY,
@@ -14,10 +15,11 @@ class ElevenLabsService:
 
         payload = {
             "text": text,
-            "model_id": "eleven_multilingual_v2",
+            "model_id": "eleven_turbo_v2_5",
             "voice_settings": {
-                "stability": 0.35,
-                "similarity_boost": 0.75
+                "stability": 1.0,
+                "similarity_boost": 0.75,
+                "use_speaker_boost": False
             }
         }
 
