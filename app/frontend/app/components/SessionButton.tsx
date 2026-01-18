@@ -1,7 +1,6 @@
 import { CommitStrategy, useScribe } from "@elevenlabs/react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "~/lib/supabase";
-import { b64 } from "~/lib/b64";
 
 const ScribeTokenUrl = "http://localhost:8000/scribe";
 
@@ -198,33 +197,61 @@ export default function MyComponent() {
   };
 
   return (
-    <div>
-      <div>
+    <div className="bg-white/95 rounded-lg shadow-lg p-6 space-y-4 border border-teal-900/10">
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.2em] text-teal-700">
+          Live Session
+        </p>
+        <h2 className="text-2xl font-light text-teal-900">HealthSimple</h2>
+      </div>
+
+      <div className="space-y-2">
         {cameraError ? (
-          <p>{cameraError}</p>
+          <p className="text-sm text-rose-600">{cameraError}</p>
         ) : (
           <video
             ref={videoRef}
             muted
             playsInline
-            style={{ width: "240px", borderRadius: "8px" }}
+            className="w-full aspect-video rounded-md bg-gray-100 object-cover"
           />
         )}
-        {!cameraError && !isCameraReady && <p>Starting camera...</p>}
+        {!cameraError && !isCameraReady && (
+          <p className="text-xs text-gray-500">Starting camera...</p>
+        )}
       </div>
-      <button onClick={handleStart} disabled={scribe.isConnected}>
-        Start Recording
-      </button>
-      <button onClick={scribe.disconnect} disabled={!scribe.isConnected}>
-        Stop
-      </button>
 
-      {scribe.partialTranscript && <p>Live: {scribe.partialTranscript}</p>}
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={handleStart}
+          disabled={scribe.isConnected}
+          className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:bg-teal-700/50"
+        >
+          Start Recording
+        </button>
+        <button
+          onClick={scribe.disconnect}
+          disabled={!scribe.isConnected}
+          className="rounded-md border border-teal-700/40 px-4 py-2 text-sm font-medium text-teal-800 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:border-teal-700/20 disabled:text-teal-700/40"
+        >
+          Stop
+        </button>
+      </div>
 
-      <div>
-        {scribe.committedTranscripts.map((t) => (
-          <p key={t.id}>{t.text}</p>
-        ))}
+      <div className="space-y-2 text-sm text-gray-700">
+        {scribe.partialTranscript && (
+          <p className="rounded-md bg-teal-50 px-3 py-2 text-teal-900">
+            Live: {scribe.partialTranscript}
+          </p>
+        )}
+
+        <div className="space-y-2">
+          {scribe.committedTranscripts.map((t) => (
+            <p key={t.id} className="rounded-md bg-gray-100 px-3 py-2">
+              {t.text}
+            </p>
+          ))}
+        </div>
       </div>
     </div>
   );
