@@ -6,10 +6,21 @@ optional, real-time physiological context.
 import os
 from strands import Agent
 from strands.models.openai import OpenAIModel
+from openai import OpenAI
 from strands.tools.mcp import MCPClient
 from mcp.client.stdio import stdio_client, StdioServerParameters
 from dotenv import load_dotenv
 import sys
+import time
+from supabase import create_client, Client
+# import sys
+# sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# from ..core.security import get_current_user
+
+url: str = os.environ.get("VITE_SUPABASE_URL")
+key: str = os.environ.get("VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY")
+supabase: Client = create_client(url, key)
 
 # Configure logging to stderr only
 import logging
@@ -189,6 +200,7 @@ def run_conversation(user_input: str = None):
     Run the wellness agent in conversational mode.
     Reads from stdin if user_input is None.
     """
+    conversation_log = []
     logger.info("Initializing Personal Wellness AI Agent...")
     
     try:
@@ -212,11 +224,21 @@ def run_conversation(user_input: str = None):
             # Conversation loop
             while user_input.lower() not in ['exit', 'quit', 'goodbye', 'bye']:
                 try:
-                    # Get agent response
+                    # User message
+                    conversation_log.append({
+                        "role": "user",
+                        "content": user_input,
+                        "timestamp": time.strftime('%l:%M%p %z on %b %d, %Y')
+                    })
+
+                    # Agent response
                     response = agent(user_input)
-                    
-                    # Print response
-                    # print(f"Agent: {response}")
+
+                    conversation_log.append({
+                        "role": "assistant",
+                        "content": response,
+                        "timestamp": time.strftime('%l:%M%p %z on %b %d, %Y')
+                    })
                     
                     # Get next user input
                     user_input = input("\nYou: ").strip()
@@ -231,10 +253,54 @@ def run_conversation(user_input: str = None):
             
             logger.info("Conversation ended")
             
+        try:
+            summary = generate_session_summary(conversation_log, agent.model)
+            print("\n— Session Reflection —\n")
+            print(summary)
+            response = (
+                supabase.table("sessions_info")
+                .insert({"note": summary, "user_id": get_current_user()})
+                .execute()
+            )
+        except Exception as e:
+            logger.warning(f"Could not generate summary: {e}")
+            
     except Exception as e:
         logger.error(f"Failed to initialize agent: {e}", exc_info=True)
         print("I'm sorry, I couldn't start properly. Please check the logs.")
         sys.exit(1)
+        
+def generate_session_summary(conversation_log: list, model: OpenAIModel) -> str:
+    """
+    Generate a reflective, emotionally safe summary of the conversation.
+    """
+
+    summary_prompt = """You are a reflective wellness companion.
+
+Summarize the following conversation session in a gentle, supportive way.
+
+Rules:
+- Do NOT diagnose or label the user
+- Do NOT mention biometric data or tools
+- Use uncertainty-aware, compassionate language
+- Focus on emotional themes, moments of grounding, and what seemed important
+- Keep it concise (5-8 sentences max)
+- This summary is for the user, not a clinician
+
+Conversation:
+"""
+    formatted_convo = "\n".join(
+        f"{m['role'].capitalize()}: {m['content']}"
+        for m in conversation_log
+    )
+    client = OpenAI()
+    response = client.responses.create(
+        model=str(model),
+        input=summary_prompt+"\n"+formatted_convo
+    )
+
+    return response.output_text
+
 
 
 if __name__ == "__main__":

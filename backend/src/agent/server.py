@@ -12,6 +12,7 @@ from typing import Optional, Dict, Any
 import logging
 import random
 
+
 # Configure logging to stderr
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +46,7 @@ def get_physical_snapshot() -> dict:
         "speaking": False,
         "head_motion": "low",
         "timestamp": "1:36PM EST on Oct 18, 2010"
+        "current_time": "1:40PM EST on Oct 18, 2010"
     }
 
     This tool returns interpreted physical signals and should be called to ensure the user's physical state matches what they claim, especially to ensure they are actually alright when they say so. ALWAYS use this tool to ensure what they say matches their physical state.
@@ -57,8 +59,6 @@ def get_physical_snapshot() -> dict:
     if _LATEST_PHYSIOLOGY_SNAPSHOT is None:
         return _generate_mock_snapshot()
     
-    
-
     return _LATEST_PHYSIOLOGY_SNAPSHOT
 
 def _generate_mock_snapshot() -> dict:
@@ -81,7 +81,7 @@ def update_physical_data(snapshot: dict) -> None:
     Called by the perception pipeline, not the agent.
     """
     global _LATEST_PHYSIOLOGY_SNAPSHOT
-    snapshot["timestamp"] = time.strftime('%l:%M%p %z on %b %d, %Y')
+    snapshot["current_time"] = time.strftime('%l:%M%p %z on %b %d, %Y')
     _LATEST_PHYSIOLOGY_SNAPSHOT = snapshot
 
 
