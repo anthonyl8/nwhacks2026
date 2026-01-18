@@ -65,8 +65,10 @@ export default function Login() {
 
   if (authLoading) {
     return (
-      <div>
-        <p>Loading...</p>
+      <div className="min-h-screen bg-teal-700 flex items-center justify-center p-6">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -74,10 +76,16 @@ export default function Login() {
   // Show verification state
   if (verifying) {
     return (
-      <div>
-        <h1>Authentication</h1>
-        <p>Confirming your magic link...</p>
-        <p>Loading...</p>
+      <div className="min-h-screen bg-teal-700 flex items-center justify-center p-6">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+          <h1 className="text-3xl font-light text-teal-700 mb-4 text-center">
+            Authentication
+          </h1>
+          <p className="text-gray-700 mb-2 text-center">
+            Confirming your magic link...
+          </p>
+          <p className="text-gray-500 text-center">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -85,36 +93,54 @@ export default function Login() {
   // Show auth success
   if (authSuccess) {
     return (
-      <div>
-        <h1>Authentication</h1>
-        <p>✓ Check your email for the login link!</p>
-        <p>Click the link in your email to complete login.</p>
+      <div className="min-h-screen bg-teal-700 flex items-center justify-center p-6">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+          <h1 className="text-3xl font-light text-teal-700 mb-4 text-center">
+            Authentication
+          </h1>
+          <p className="text-green-600 mb-2 text-center font-medium">
+            ✓ Check your email for the login link!
+          </p>
+          <p className="text-gray-600 text-center">
+            Click the link in your email to complete login.
+          </p>
+        </div>
       </div>
     );
   }
 
   // Show login form
   return (
-    <div>
-      <h1>Sign In</h1>
-      <p>Sign in via magic link with your email below</p>
-      {authError && (
-        <div style={{ color: "red", marginBottom: "1rem" }}>
-          <p>✗ {authError}</p>
-        </div>
-      )}
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Your email"
-          value={email}
-          required={true}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <button disabled={loading}>
-          {loading ? <span>Loading</span> : <span>Send magic link</span>}
-        </button>
-      </form>
+    <div className="min-h-screen bg-teal-700 flex items-center justify-center p-6">
+      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+        <h1 className="text-3xl font-light text-teal-700 mb-2 text-center">
+          Sign In
+        </h1>
+        <p className="text-gray-600 mb-6 text-center">
+          Sign in via magic link with your email below
+        </p>
+        {authError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-600 text-sm">✗ {authError}</p>
+          </div>
+        )}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Your email"
+            value={email}
+            required={true}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-3 rounded-full bg-gray-50 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-300 border border-gray-200"
+          />
+          <button
+            disabled={loading}
+            className="w-full px-6 py-3 bg-teal-700 text-white rounded-full font-medium hover:bg-teal-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+          >
+            {loading ? <span>Loading</span> : <span>Send magic link</span>}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
