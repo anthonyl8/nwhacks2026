@@ -1,4 +1,4 @@
-fastapi
+fastapi[standard]
 uvicorn
 supabase
 python-jose[cryptography]
@@ -8,5 +8,4 @@ python-multipart
 websockets
 openai
 tenacity
-google-generativeai
-google
+strands-agents

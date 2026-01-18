@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM" # Default voice ID
 
     # Gemini
-    GEMINI_API_KEY: str = "your-gemini-api-key"
+    OPENAI_API_KEY: str = "your-gemini-api-key"
     SUPABASE_JWKS: str = ""
 
     class Config:

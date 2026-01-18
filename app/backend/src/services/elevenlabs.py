@@ -1,5 +1,5 @@
 import httpx
-from app.backend.src.core.config import settings
+from backend.src.core.config import settings
 
 class ElevenLabsService:
     @staticmethod

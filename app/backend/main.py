@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from backend.src.routes import auth, session, intelligence, memory
+from backend.src.routes import session, intelligence, memory
 from backend.src.core.config import settings
 
 
@@ -24,7 +24,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
 app.include_router(session.router)
 app.include_router(intelligence.router)
 app.include_router(memory.router)

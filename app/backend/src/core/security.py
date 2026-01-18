@@ -1,8 +1,6 @@
-from fastapi import HTTPException, Request
 from jose import jwt, JWTError
+from fastapi import Request, HTTPException, Depends
 from backend.src.core.config import settings
-import requests
-
 
 async def get_current_user(request: Request):
     auth_header = request.headers.get("Authorization")
@@ -10,17 +8,19 @@ async def get_current_user(request: Request):
         raise HTTPException(status_code=401, detail="Missing Auth Token")
 
     token = auth_header.split(" ")[1]
-    jwks = requests.get(settings.SUPABASE_JWKS).json()
+
+
+
+    # --- PRODUCTION LOGIC: VALIDATE REAL JWT ---
     try:
-        # Verify the token using the Supabase JWT Secret
+        # Supabase uses your JWT_SECRET and the HS256 algorithm.
         payload = jwt.decode(
-            token, jwks, algorithms=["ES256"], audience="authenticated"
+            token, 
+            settings.SUPABASE_JWT_SECRET, 
+            algorithms=["HS256"], 
+            audience="authenticated"
         )
-        return payload["sub"]  # This is the UUID of the user in Supabase
-    except JWTError:
-        # Fallback for hackathon if secrets aren't set up perfectly or for testing
-        # In production, DO NOT allow this.
-        if settings.SUPABASE_JWT_SECRET == "your-jwt-secret":
-            # If default/unset, assume mock
-            return "user_mock_id"
+        return payload.get("sub")
+    except JWTError as e:
+        print(f"JWT Verification Error: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid Session")

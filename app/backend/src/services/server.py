@@ -3,7 +3,6 @@ MCP Server for Personal Wellness Agent
 Provides the get_physical_data tool to the wellness agent.
 """
 import os
-import tempfile
 from mcp.server import FastMCP
 from dotenv import load_dotenv
 import json

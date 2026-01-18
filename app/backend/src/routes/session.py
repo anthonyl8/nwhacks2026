@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional, Dict, Any, cast
 from backend.src.core.security import get_current_user
-from backend.src.services.agent import AgentService
+from backend.src.services.agent_interaction_service import AgentService
 from backend.src.core.config import settings
 from backend.src.core.supabase import supabase
 from jose import jwt, JWTError
