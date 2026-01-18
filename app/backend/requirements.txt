@@ -6,3 +6,7 @@ httpx
 pydantic-settings
 python-multipart
 websockets
+openai
+tenacity
+google-generativeai
+google

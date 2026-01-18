@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaPipe Biometric Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MediaPipe Biometric Feature Extraction</h1>
+        </header>
+        
+        <div class="main-content">
+            <div class="video-section">
+                <video id="input_video" autoplay playsinline></video>
+                <canvas id="output_canvas"></canvas>
+                <div class="controls">
+                    <button id="startBtn">Start Camera</button>
+                    <button id="stopBtn" disabled>Stop Camera</button>
+                </div>
+            </div>
+            
+            <div class="features-section">
+                <h2>Extracted Features</h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h3>Eye & Blink</h3>
+                        <div id="eye-features"></div>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Face Geometry</h3>
+                        <div id="face-features"></div>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Mouth & Speech</h3>
+                        <div id="mouth-features"></div>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Head & Posture</h3>
+                        <div id="head-features"></div>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Breathing</h3>
+                        <div id="breathing-features"></div>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Derived Signals</h3>
+                        <div id="derived-features"></div>
+                    </div>
+                </div>
+                
+                <div class="output-section">
+                    <h3>Feature Output (JSON)</h3>
+                    <pre id="json-output"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="main.js"></script>
+</body>
+</html>

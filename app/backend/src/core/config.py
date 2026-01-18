@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -6,8 +7,16 @@ class Settings(BaseSettings):
 
     # Supabase
     SUPABASE_URL: str = "https://your-project.supabase.co"
-    SUPABASE_KEY: str = "your-service-role-key-or-anon-key"
+    SUPABASE_KEY: str = "your-anon-key"
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None # For backend admin tasks
     SUPABASE_JWT_SECRET: str = "your-jwt-secret"
+    
+    # ElevenLabs
+    ELEVENLABS_API_KEY: str = "your-elevenlabs-api-key"
+    ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM" # Default voice ID
+
+    # Gemini
+    GEMINI_API_KEY: str = "your-gemini-api-key"
     SUPABASE_JWKS: str = ""
 
     class Config:
