@@ -7,6 +7,8 @@ package-lock.json
 package.json
 frontend/package-lock.json
 frontend/package.json
+lib
+.venv
 
 # React Router
 app/frontend/.react-router/

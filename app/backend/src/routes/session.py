@@ -118,10 +118,12 @@ async def wellness_session(websocket: WebSocket, token: str = Query(...)):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    # Use AgentService (which now uses Supabase client)
-    agent = AgentService()
+    # Pass the token to AgentService for authenticated requests
+    agent_service = AgentService(token=token)
+
     try:
         while True:
+            # Receive text input from client
             data = await websocket.receive_text()
             # Mock agent interaction
             response_text = f"Agent heard: {data}. Relax..."

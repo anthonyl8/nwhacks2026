@@ -8,10 +8,14 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 @router.post("/sync")
 async def sync_user(auth_id: str = Depends(get_current_user)):
     """
-    Ensures the Supabase user has a corresponding record in our 'profiles' table (if needed).
-    Supabase handles auth.users automatically.
-    This endpoint might be called after signup to initialize app-specific profile data.
+    Ensures the Supabase user has a corresponding record in our 'profiles' table.
     """
+    auth_id = user["id"]
+    email = user.get("email") or "unknown"
+    
+    # Use authenticated client
+    client = get_authenticated_client(user["token"])
+
     # Check if profile exists
     response = supabase.table("profiles").select("*").eq("id", auth_id).execute()
 
