@@ -1,7 +1,6 @@
 import { CommitStrategy, useScribe } from "@elevenlabs/react";
-import { useRef } from "react";
 import { supabase } from "~/lib/supabase";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import CameraCapture, { type CameraCaptureHandle } from "./CameraCapture";
 import { useNavigate } from "react-router";
 
@@ -12,9 +11,16 @@ interface SpeakRequest {
   history?: Array<Record<string, string>> | null;
   b64_frame: string;
 }
+
+const microphoneConfig = {
+  echoCancellation: true,
+  noiseSuppression: true,
+};
+
 export default function MyComponent() {
   const cameraRef = React.useRef<CameraCaptureHandle>(null);
   const navigate = useNavigate();
+  const scribeTokenRef = useRef<string | null>(null);
 
   async function fetchTokenFromServer(): Promise<string> {
     const res = await fetch(ScribeTokenUrl, { method: "GET" });
@@ -57,53 +63,52 @@ export default function MyComponent() {
         b64_frame: b64Frame,
       };
 
-        try {
-          if (scribe.isConnected) {
-            await Promise.resolve(scribe.disconnect());
-          }
-
-          const response = await fetch(
-            "http://localhost:8000/intelligence/speak",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json", // Indicate the data type in the body
-              },
-              body: JSON.stringify(reqBody),
-            },
-          );
-
-          if (!response.ok) {
-            throw new Error(
-              `Speak request failed: ${response.status} ${response.statusText}`,
-            );
-          }
-
-          const rawBlob = await response.blob();
-          const audioBlob = rawBlob.type
-            ? rawBlob
-            : new Blob([rawBlob], { type: "audio/mpeg" });
-
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-
-          await new Promise<void>((resolve, reject) => {
-            audio.onended = () => resolve();
-            audio.onerror = () => reject(new Error("Audio playback failed"));
-            audio.play().catch(reject);
-          });
-
-          URL.revokeObjectURL(audioUrl);
-
-          if (scribeTokenRef.current) {
-            await scribe.connect({
-              token: scribeTokenRef.current,
-              microphone: microphoneConfig,
-            });
-          }
-        } catch (error) {
-          console.error("Failed to fetch/play speak audio:", error);
+      try {
+        if (scribe.isConnected) {
+          await Promise.resolve(scribe.disconnect());
         }
+
+        const response = await fetch(
+          "http://localhost:8000/intelligence/speak",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json", // Indicate the data type in the body
+            },
+            body: JSON.stringify(reqBody),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Speak request failed: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        const rawBlob = await response.blob();
+        const audioBlob = rawBlob.type
+          ? rawBlob
+          : new Blob([rawBlob], { type: "audio/mpeg" });
+
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+
+        await new Promise<void>((resolve, reject) => {
+          audio.onended = () => resolve();
+          audio.onerror = () => reject(new Error("Audio playback failed"));
+          audio.play().catch(reject);
+        });
+
+        URL.revokeObjectURL(audioUrl);
+
+        if (scribeTokenRef.current) {
+          await scribe.connect({
+            token: scribeTokenRef.current,
+            microphone: microphoneConfig,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch/play speak audio:", error);
       }
     },
     onCommittedTranscriptWithTimestamps: (data) => {
@@ -127,13 +132,11 @@ export default function MyComponent() {
         method: "POST",
       });
       const token = await fetchTokenFromServer();
+      scribeTokenRef.current = token;
 
       await scribe.connect({
         token,
-        microphone: {
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
+        microphone: microphoneConfig,
       });
     } catch (error) {
       console.error("Failed to start session:", error);
