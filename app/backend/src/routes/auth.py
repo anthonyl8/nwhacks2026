@@ -1,30 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.backend.src.core.db import get_db
+from fastapi import APIRouter, Depends
 from app.backend.src.core.security import get_current_user
-from app.backend.src.models import models
+from app.backend.src.core.supabase import supabase
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post("/sync")
-
 async def sync_user(
-    clerk_id: str = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    auth_id: str = Depends(get_current_user)
 ):
     """
-    Ensures the Clerk user has a corresponding record in our Postgres DB 
-    to store their emotional landmarks and biometric history.
+    Ensures the Supabase user has a corresponding record in our 'profiles' table (if needed).
+    Supabase handles auth.users automatically.
+    This endpoint might be called after signup to initialize app-specific profile data.
     """
-    result = await db.execute(select(models.User).filter(models.User.clerk_id == clerk_id))
-    user = result.scalars().first()
-
-    if not user:
-        new_user = models.User(clerk_id=clerk_id)
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
-        return {"status": "User created", "id": new_user.id}
+    # Check if profile exists
+    response = supabase.table("profiles").select("*").eq("id", auth_id).execute()
+    
+    if not response.data:
+        # Create profile
+        # Assuming 'profiles' table has 'id' which references auth.users(id)
+        data = {"id": auth_id, "email": "unknown"} # We might need email from token or request body
+        supabase.table("profiles").insert(data).execute()
+        return {"status": "Profile created", "id": auth_id}
         
-    return {"status": "User synced", "id": user.id}
+    return {"status": "Profile synced", "id": auth_id}

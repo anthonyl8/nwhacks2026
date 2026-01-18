@@ -5,7 +5,7 @@ from datetime import datetime
 # User Schemas
 class UserBase(BaseModel):
     email: Optional[str] = None
-    clerk_id: str
+    auth_id: str
 
 class UserCreate(UserBase):
     pass
@@ -33,7 +33,7 @@ class EmotionalLogOut(EmotionalLogBase):
     class Config:
         from_attributes = True
 
-# Session Schemas (if needed)
+# Session Schemas
 class SessionBase(BaseModel):
     pass
     

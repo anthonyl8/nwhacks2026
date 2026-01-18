@@ -1,15 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from app.backend.src.core.db import engine
-from app.backend.src.models import models
 from app.backend.src.routes import auth, session, intelligence, memory
 from app.backend.src.core.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup
     yield
-    await engine.dispose()
+    # Shutdown
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
