@@ -3,6 +3,9 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict
+import base64
+from openai import OpenAI
+from backend.src.core.config import settings
 
 # Import services
 from backend.src.core.security import get_current_user
@@ -13,9 +16,57 @@ router = APIRouter(prefix="/intelligence", tags=["Intelligence"])
 class SpeakRequest(BaseModel):
     user_text: str
     history: Optional[List[Dict[str, str]]] = None
-    features: dict
+    b64_frame: str
     
 agent_service: AgentService
+
+def analyze_emotion_from_base64_image(image_base64: str) -> str:
+    """
+    Given a base64-encoded image of a person, analyze their facial sentiment
+    and return a single-word emotion label (e.g., happy, stressed, sad).
+
+    This is a probabilistic inference based on visible facial cues.
+    """
+    
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+    # Strip data URL header if present
+    if image_base64.startswith("data:image"):
+        image_base64 = image_base64.split(",", 1)[1]
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",  # vision-capable + fast
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are an emotion recognition assistant. "
+                    "Given an image of a person, infer their emotional state "
+                    "based only on visible facial and posture cues. "
+                    "Respond with a single lowercase word like: "
+                    "happy, calm, stressed, sad, anxious, tired, neutral. "
+                    "If unclear, respond with 'uncertain'."
+                ),
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "What is the person's emotional state?"},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_base64}"
+                        },
+                    },
+                ],
+            },
+        ],
+        max_tokens=10,
+    )
+
+    emotion = response.choices[0].message.content.strip().lower()
+    print(emotion + " wiuorhgturhgtuihwaeriugWERFER")
+    return emotion
     
 @router.post("/start")
 async def init_agent(auth_id: str):
@@ -30,7 +81,7 @@ async def agent_speak(request: SpeakRequest):
     # If we want to support RLS we should probably add Depends(get_current_user) but 
     # to avoid changing API signature too much if it's public, we'll leave it as is 
     # or assume it's public. However, AgentService defaults to global supabase client if no token.
-    processed_features = await analyze_features(request.features)
+    emotion_state = analyze_emotion_from_base64_image(request.b64_frame)
     
     # agent_service.run_conversation(request.user_text, processed_features)
     
@@ -38,7 +89,7 @@ async def agent_speak(request: SpeakRequest):
         global agent_service
         agent_service.chat_history = request.history if request.history else []
         # Call generate_audio_stream with the text string
-        async for audio_chunk in agent_service.generate_audio_stream(request.user_text, processed_features):
+        async for audio_chunk in agent_service.generate_audio_stream(request.user_text, emotion_state):
             yield audio_chunk
 
     return StreamingResponse(
@@ -46,45 +97,45 @@ async def agent_speak(request: SpeakRequest):
         media_type="audio/mpeg"
     )
 
-async def analyze_features(features: dict):
-    # Logic for processing biometric features
-    # Create a copy to avoid mutating the input dictionary
-    processed_features = features.copy()
-    processed_features['current_time'] = ''
+# async def analyze_features(features: dict):
+#     # Logic for processing biometric features
+#     # Create a copy to avoid mutating the input dictionary
+#     processed_features = features.copy()
+#     processed_features['current_time'] = ''
     
-    # Handle potentially missing timestamp
-    ts = processed_features.get('timestamp')
-    if ts:
-        try:
-            # Handle string timestamp (e.g. from JSON)
-            if isinstance(ts, str):
-                ts = float(ts)
-            dt = datetime.datetime.fromtimestamp(ts / 1000)
-            processed_features['timestamp'] = dt.strftime('%l:%M%p %z on %b %d, %Y')
-        except (ValueError, TypeError):
-             processed_features['timestamp'] = "unknown time"
-    else:
-         processed_features['timestamp'] = "unknown time"
+#     # Handle potentially missing timestamp
+#     ts = processed_features.get('timestamp')
+#     if ts:
+#         try:
+#             # Handle string timestamp (e.g. from JSON)
+#             if isinstance(ts, str):
+#                 ts = float(ts)
+#             dt = datetime.datetime.fromtimestamp(ts / 1000)
+#             processed_features['timestamp'] = dt.strftime('%l:%M%p %z on %b %d, %Y')
+#         except (ValueError, TypeError):
+#              processed_features['timestamp'] = "unknown time"
+#     else:
+#          processed_features['timestamp'] = "unknown time"
     
-    # Call formulate_response which returns a "vibe" state (string), NOT a StreamingResponse
-    return processed_features
+#     # Call formulate_response which returns a "vibe" state (string), NOT a StreamingResponse
+#     return processed_features
 
-# For Testing
-req = SpeakRequest(
-    user_text="hey, I'm feeling sad", 
-    history=[], 
-    features={
-        "blink_rate": 12,
-        "ear_mean": 0.62,
-        "jaw_tension": 0.01,
-        "breathing_rate": 15,
-        "breathing_amplitude": "high",
-        "facial_variance": 0.03,
-        "speaking": False,
-        "head_motion": "low",
-        "timestamp": "1:36PM EST on Oct 18, 2010",
-        "current_time": "1:40PM EST on Oct 18, 2010"
-    })
+# # For Testing
+# req = SpeakRequest(
+#     user_text="hey, I'm feeling sad", 
+#     history=[], 
+#     features={
+#         "blink_rate": 12,
+#         "ear_mean": 0.62,
+#         "jaw_tension": 0.01,
+#         "breathing_rate": 15,
+#         "breathing_amplitude": "high",
+#         "facial_variance": 0.03,
+#         "speaking": False,
+#         "head_motion": "low",
+#         "timestamp": "1:36PM EST on Oct 18, 2010",
+#         "current_time": "1:40PM EST on Oct 18, 2010"
+#     })
 
 import asyncio
 from io import BytesIO

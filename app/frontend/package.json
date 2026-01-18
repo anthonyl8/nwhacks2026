@@ -9,6 +9,8 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.31.0",
+    "@elevenlabs/react": "^0.13.0",
     "@react-router/node": "7.12.0",
     "@react-router/serve": "7.12.0",
     "@supabase/supabase-js": "^2.90.1",
