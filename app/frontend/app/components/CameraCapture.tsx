@@ -1,13 +1,25 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
 
-type CameraCaptureProps = {
-  onCapture: (imageBase64: string) => void;
+export type CameraCaptureHandle = {
+  getSnapshot: () => string | null;
 };
 
-const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
+interface CameraCaptureProps {
+  onCapture?: (imageBase64: string) => void;
+  width?: number;
+  height?: number;
+}
+
+const CameraCapture = forwardRef<CameraCaptureHandle, CameraCaptureProps>(({ onCapture, width = 320, height = 240 }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    getSnapshot: () => {
+      return captureFrame();
+    }
+  }));
 
   useEffect(() => {
     startCamera();
@@ -39,17 +51,19 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
   };
 
   const stopCamera = () => {
-    stream?.getTracks().forEach((track) => track.stop());
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
   };
 
-  const captureFrame = () => {
+  const captureFrame = (): string | null => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    if (!video || !canvas) return;
+    if (!video || !canvas) return null;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return null;
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -59,11 +73,15 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
     // JPEG keeps payload smaller than PNG
     const imageBase64 = canvas.toDataURL("image/jpeg", 0.8);
 
-    onCapture(imageBase64);
+    if (onCapture) {
+      onCapture(imageBase64);
+    }
+    
+    return imageBase64;
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center" }}>
       <video
         ref={videoRef}
         autoPlay
@@ -71,18 +89,17 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture }) => {
         muted
         style={{
           width: "100%",
-          maxWidth: "320px",
+          maxWidth: `${width}px`,
           borderRadius: "8px",
           backgroundColor: "#000",
+          transform: "scaleX(-1)" // Mirror effect
         }}
       />
-
-      <button onClick={captureFrame}>Capture Frame</button>
 
       {/* Hidden canvas used for frame capture */}
       <canvas ref={canvasRef} style={{ display: "none" }} />
     </div>
   );
-};
+});
 
 export default CameraCapture;

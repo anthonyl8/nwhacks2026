@@ -25,8 +25,8 @@ export default function Login() {
           sessionStorage.removeItem("redirectAfterLogin");
           navigate(redirectPath);
         } else {
-          // Default redirect to /routes/MainPageContainer.tsx if no stored path
-          navigate("/routes/MainPageContainer.tsx");
+          // Default redirect to /mainPage if no stored path
+          navigate("/mainPage");
         }
       }, 100);
 

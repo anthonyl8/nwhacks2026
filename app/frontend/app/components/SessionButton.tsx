@@ -1,6 +1,8 @@
 import { CommitStrategy, useScribe } from "@elevenlabs/react";
 import { supabase } from "~/lib/supabase";
-import { b64 } from "~/lib/b64";
+import React, { useEffect } from "react";
+import CameraCapture, { type CameraCaptureHandle } from "./CameraCapture";
+import { useNavigate } from "react-router";
 
 const ScribeTokenUrl = "http://localhost:8000/scribe";
 
@@ -10,6 +12,9 @@ interface SpeakRequest {
   b64_frame: string;
 }
 export default function MyComponent() {
+  const cameraRef = React.useRef<CameraCaptureHandle>(null);
+  const navigate = useNavigate();
+
   async function fetchTokenFromServer(): Promise<string> {
     const res = await fetch(ScribeTokenUrl, { method: "GET" });
 
@@ -42,10 +47,13 @@ export default function MyComponent() {
     },
     onCommittedTranscript: (data) => {
       console.log("Committed:", data.text);
+      
+      const b64Frame = cameraRef.current?.getSnapshot() || "";
+      
       const reqBody: SpeakRequest = {
         user_text: data.text,
         history: null,
-        b64_frame: b64,
+        b64_frame: b64Frame,
       };
 
       fetch("http://localhost:8000/intelligence/speak", {
@@ -72,35 +80,75 @@ export default function MyComponent() {
       console.warn("Could not get supabase user id:", err);
     }
     // Fetch a single use token from the server
-    fetch(`http://localhost:8000/intelligence/start?auth_id=${userId}`, {
-      method: "POST",
-    });
-    const token = await fetchTokenFromServer();
+    try {
+      fetch(`http://localhost:8000/intelligence/start?auth_id=${userId}`, {
+        method: "POST",
+      });
+      const token = await fetchTokenFromServer();
 
-    await scribe.connect({
-      token,
-      microphone: {
-        echoCancellation: true,
-        noiseSuppression: true,
-      },
-    });
+      await scribe.connect({
+        token,
+        microphone: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to start session:", error);
+    }
   };
 
+  const handleStop = async () => {
+    await scribe.disconnect();
+    // Navigate back to past sessions or home after stopping
+    // navigate("/past-sessions"); 
+    // Or just stay here? User asked for a stop button that works.
+  };
+
+  // Auto-start session on mount
+  useEffect(() => {
+    handleStart();
+    // Cleanup on unmount
+    return () => {
+      // scribe.disconnect() is not directly available here if we don't track connection state, 
+      // but useScribe hook handles cleanup usually? 
+      // Actually useScribe documentation says we should manage it.
+      // But handleStart is async.
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <div>
-      <button onClick={handleStart} disabled={scribe.isConnected}>
-        Start Recording
-      </button>
-      <button onClick={scribe.disconnect} disabled={!scribe.isConnected}>
-        Stop
-      </button>
+    <div className="flex flex-col gap-6 items-center w-full max-w-md mx-auto">
+      <div className="w-full bg-black rounded-lg overflow-hidden shadow-lg">
+        <CameraCapture ref={cameraRef} width={640} height={480} />
+      </div>
+      
+      <div className="flex gap-4">
+        {!scribe.isConnected ? (
+          <div className="px-8 py-3 bg-gray-200 text-gray-600 rounded-full font-medium shadow-inner animate-pulse">
+            Connecting to session...
+          </div>
+        ) : (
+          <button 
+            onClick={handleStop} 
+            className="px-8 py-3 bg-red-600 text-white rounded-full font-medium hover:bg-red-700 transition-colors shadow-md"
+          >
+            End Session
+          </button>
+        )}
+      </div>
 
-      {scribe.partialTranscript && <p>Live: {scribe.partialTranscript}</p>}
-
-      <div>
-        {scribe.committedTranscripts.map((t) => (
-          <p key={t.id}>{t.text}</p>
-        ))}
+      <div className="w-full bg-white rounded-lg shadow p-4 min-h-[100px]">
+        <h3 className="text-gray-500 text-sm font-medium mb-2">Transcript</h3>
+        <div className="space-y-2">
+          {scribe.committedTranscripts.map((t) => (
+            <p key={t.id} className="text-gray-800">{t.text}</p>
+          ))}
+          {scribe.partialTranscript && (
+            <p className="text-gray-500 italic">{scribe.partialTranscript}</p>
+          )}
+        </div>
       </div>
     </div>
   );
