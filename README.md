@@ -1,17 +1,6 @@
 # HealthSimple
 
-## Inspiration
-
-Most AI assistants understand *language*, but they miss something fundamental about human communication: **emotion**. In real conversations, how someone feels often matters more than what they say.
-
-We were inspired by the gap between emotionally rich human interaction and the flat, text-only nature of most AI systems. Wellness conversations in particular suffer from this — when someone is stressed, overwhelmed, or disengaged, the *way* an AI responds can make a meaningful difference.
-
-HealthSimple started as an exploration of a simple question:  
-**What if AI could adapt to how you feel in the moment, not just the words you type?**
-
----
-
-## What it does
+## Description
 
 HealthSimple is a personal wellness AI that responds with emotional awareness in real time.
 
@@ -26,69 +15,97 @@ For example:
 HealthSimple does **not** diagnose, label, or store emotional data, and it does not perform identity recognition. The goal is not to analyze users, but to respond to them more thoughtfully.
 
 ---
+## Inspiration
 
-## How we built it
+Most AI assistants understand *language*, but they miss something fundamental about human communication: **emotion**. In real conversations, how someone feels often matters more than what they say.
 
-HealthSimple uses a decoupled, multimodal architecture:
+We were inspired by the gap between emotionally rich human interaction and the flat, text-only nature of most AI systems. Wellness conversations in particular suffer from this — when someone is stressed, overwhelmed, or disengaged, the *way* an AI responds can make a meaningful difference.
 
-- **Frontend (Web)**
-  - Live camera capture
-  - Single-frame snapshot taken at each user message
-  - Privacy-first: no video storage or streaming
-- **Backend**
-  - Vision-based sentiment inference using an LLM
-  - Emotion output represented as soft, uncertainty-aware labels
-  - No persistent biometric or emotional state tracking
-- **Conversational Agent**
-  - Built using a modular agent framework
-  - Receives user text + inferred emotional context
-  - Uses that context only to guide *how* it responds, not *what conclusions* it makes
-  - Designed with strict safety constraints: no diagnosis, no authority, no dependency
-
-This separation allowed us to iterate quickly while keeping emotional inference, reasoning, and conversation cleanly isolated.
+HealthSimple started as an exploration of a simple question:  
+**What if AI could adapt to how you feel in the moment, not just the words you type?**
 
 ---
 
-## Challenges we ran into
+## Features
 
-One of the biggest challenges was deciding **who should control when emotional context is gathered**.
-
-Our initial design gave the backend agent autonomy to decide when it wanted to analyze the user’s emotional state by exposing fetch tools to the agent via a STDIO transport MCP server — for example, triggering emotion analysis when it inferred stress from conversation alone. In practice, this approach introduced several problems.
-
-First, it created a **circular reasoning loop**: the agent would infer stress from text, request emotional context to confirm it, and then reinforce its own assumptions. This made the system overconfident in ambiguous situations.
-
-Second, it raised **transparency and consent concerns**. From a user perspective, it was unclear *when* or *why* emotional analysis was happening, which conflicted with our goal of building a calm, trust-preserving experience.
-
-Third, it complicated system behavior and debugging. Emotion requests became dependent on subtle conversational cues, making responses less predictable and harder to reason about or evaluate.
-
-We ultimately pivoted to a simpler and more robust approach: emotional context is captured **once per user turn**, explicitly tied to the moment the user chooses to speak. This removed hidden triggers, eliminated feedback loops, reduced complexity, and aligned better with privacy and ethical design principles.
+* **Real-Time Biometric Analysis**: Tracks 15+ markers including Eye Aspect Ratio (EAR), jaw tension, and breathing rate using MediaPipe landmarks.
+* **Emotionally Aware Conversations**: Utilizes GPT-4o-mini to infer sentiment and dynamically adjust conversational direction.
+* **Low-Latency Voice Interaction**: Achieves < 500ms end-to-end latency via asynchronous streaming and sentence-boundary chunking with ElevenLabs TTS.
+* **Stateful Agent Architecture**: Implements a Model Context Protocol (MCP) server to orchestrate selective querying of physiological data for context-aware support.
+* **Secure Persistence**: Integrated with Supabase for user authentication and historical session tracking.
 
 ---
 
-## Accomplishments that we're proud of
+## Tech Stack
 
-- Built a working multimodal AI experience end-to-end
-- Successfully integrated visual emotion context without storing video or personal data
-- Designed an agent that adapts *style* rather than making emotional claims
-- Created a calm, human-centered interaction rather than a flashy demo
-- Maintained ethical boundaries while still exploring emotional intelligence
-
----
-
-## What we learned
-
-We learned that small adjustments in tone, pacing, and phrasing can significantly change how supportive an interaction feels. Being more careful is key in AI emotional awareness. We also learned that multimodal AI becomes far more powerful when uncertainty and humility are treated as first-class design principles.
-
-Most importantly, we learned that building human-centered AI requires as much attention to *what not to do* as what to build.
+* **Frontend**: React, TypeScript, React Router, Tailwind CSS
+* **Backend**: Python, FastAPI, OpenAI API, ElevenLabs API
+* **Infrastructure**: Supabase (Auth & Database)
+* **Computer Vision**: MediaPipe
 
 ---
 
-## What's next for HealthSimple
+## Setup Guide
 
-Next, we want to:
-- Improve emotional inference robustness across lighting and environments
-- Allow users to opt into or out of emotion-aware responses dynamically
-- Explore session-level reflections that help users feel seen without storing sensitive data
-- Expand beyond wellness into education, coaching, and accessibility use cases
+### 1. Clone the Repository
 
-Our long-term vision is to make emotionally aware AI interactions feel simple, respectful, and genuinely human, just like the name HealthSimple suggests.
+```bash
+git clone https://github.com/anthonyl8/HealthSimple.git
+cd HealthSimple
+```
+
+### 2. Backend Setup
+
+```bash
+cd app/backend
+python -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. Configure Backend Environment
+
+Create a `.env` file in the `app/backend` directory:
+
+```env
+PROJECT_NAME=HealthSimple
+
+# Supabase Configuration
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+SUPABASE_JWT_SECRET=your_supabase_jwt_secret
+
+# AI Service Keys
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
+ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM
+OPENAI_API_KEY=your_openai_api_key
+```
+
+### 4. Run the Backend
+
+```bash
+cd app/backend
+fastapi dev main.py
+```
+
+### 5. Frontend Setup
+
+```bash
+cd app/frontend
+npm install
+```
+
+### 6. Configure Frontend Environment
+
+Create a `.env` file in the `app/frontend` directory:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_anon_key
+```
+
+### 7. Run the Frontend
+
+```bash
+npm run dev
+```
